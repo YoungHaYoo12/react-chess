@@ -1,0 +1,25 @@
+.removedPieces {
+  height: 100%;
+  border: solid black 2px;
+  width: 150px;
+  margin: auto;
+  display: flex;
+  align-items: center;
+}
+
+.removedPiece {
+  width: 50%;
+  margin: auto;
+}
+
+.centeringContainer {
+  width: 100%;
+}
+
+.whiteRemovedPieces {
+  background-color: rgb(232, 235, 239);
+}
+
+.blackRemovedPieces {
+  background-color: rgb(125, 135, 150);
+}

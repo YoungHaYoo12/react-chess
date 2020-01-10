@@ -1,0 +1,16 @@
+.square {
+  flex: 1;
+}
+
+/* code for light and dark squares of board*/
+.light {
+  background-color: rgb(232, 235, 239);
+}
+.dark {
+  background-color: rgb(125, 135, 150);
+}
+
+/* code to highlight squares to where moves are possible*/
+.highlight {
+  background-color: #35d6ed;
+}

@@ -1,0 +1,17 @@
+.board {
+  width: 700px;
+  height: 100%;
+
+  margin: auto;
+  border-top: solid black 2px;
+  border-bottom: solid black 2px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  flex: 1;
+
+  display: flex;
+}

@@ -1,0 +1,37 @@
+.title {
+  text-align: center;
+  border: solid black 2px;
+  border-bottom: 0;
+}
+.titleTop {
+  display: flex;
+  margin: auto;
+}
+
+.picture {
+  font-size: 3em;
+  margin: auto;
+}
+h3 {
+  font-size: 3em;
+  margin-bottom: 0;
+  margin-top: 0;
+  font-family: "Playfair Display SC", serif;
+}
+
+h6 {
+  font-size: 1.3em;
+  margin: 0;
+  border-top: solid black 2px;
+  font-family: "Playfair Display SC", serif;
+}
+
+.white-turn {
+  background-color: black;
+  color: white;
+}
+
+.black-turn {
+  background-color: white;
+  color: black;
+}
