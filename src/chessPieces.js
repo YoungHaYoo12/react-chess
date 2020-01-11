@@ -2,39 +2,53 @@
 const Piece = require("./chessPieceLogic.js");
 const numOfCols = 8;
 
-// ordered from front row to back row, left to right
-const allWhitePieces = [];
-const allBlackPieces = [];
+/* returns chess pieces of board depending on which color 
+player chooses; playerColor is an integer: 0 for white,1 for black */
+export default function allChessPieces(playerColor) {
+  // ordered from front row to back row, left to right
+  const allWhitePieces = [];
+  const allBlackPieces = [];
+  let whiteKing;
+  let blackKing;
 
-// fill in pawns
-for (let col = 0; col < numOfCols; col++) {
-  allWhitePieces.push(new Piece.Pawn(0, 6, col));
-  allBlackPieces.push(new Piece.Pawn(1, 1, col));
+  // if player chooses white
+  if (playerColor === 0) {
+    fillInFrontRow(0, 6, allWhitePieces);
+    whiteKing = fillInBackRow(0, 7, allWhitePieces);
+    fillInFrontRow(1, 1, allBlackPieces);
+    blackKing = fillInBackRow(1, 0, allBlackPieces);
+  }
+
+  // if player chooses black
+  else {
+    fillInFrontRow(1, 6, allBlackPieces);
+    blackKing = fillInBackRow(1, 7, allBlackPieces);
+    fillInFrontRow(0, 1, allWhitePieces);
+    whiteKing = fillInBackRow(0, 0, allWhitePieces);
+  }
+
+  // return array of allWhitePieces, allBlackPieces, and a reference to two kings
+  return [allWhitePieces, allBlackPieces, [whiteKing, blackKing]];
 }
 
-// fill in back row
-allWhitePieces.push(new Piece.Rook(0, 7, 0));
-allWhitePieces.push(new Piece.Knight(0, 7, 1));
-allWhitePieces.push(new Piece.Bishop(0, 7, 2));
-allWhitePieces.push(new Piece.Queen(0, 7, 3));
-// also save king to variable
-const whiteKing = new Piece.King(0, 7, 4);
-allWhitePieces.push(whiteKing);
-allWhitePieces.push(new Piece.Bishop(0, 7, 5));
-allWhitePieces.push(new Piece.Knight(0, 7, 6));
-allWhitePieces.push(new Piece.Rook(0, 7, 7));
+// helper function for allChessPieces that fills array with row of pawns
+function fillInFrontRow(color, row, array) {
+  for (let col = 0; col < numOfCols; col++) {
+    array.push(new Piece.Pawn(color, row, col));
+  }
+}
 
-allBlackPieces.push(new Piece.Rook(1, 0, 0));
-allBlackPieces.push(new Piece.Knight(1, 0, 1));
-allBlackPieces.push(new Piece.Bishop(1, 0, 2));
-allBlackPieces.push(new Piece.Queen(1, 0, 3));
-// also save king to variable
-const blackKing = new Piece.King(1, 0, 4);
-allBlackPieces.push(blackKing);
-allBlackPieces.push(new Piece.Bishop(1, 0, 5));
-allBlackPieces.push(new Piece.Knight(1, 0, 6));
-allBlackPieces.push(new Piece.Rook(1, 0, 7));
-
-const kings = [whiteKing, blackKing];
-
-module.exports = { allWhitePieces, allBlackPieces, kings };
+/* helper function for allChessPieces that fills array with back row;
+  also returns king specifically */
+function fillInBackRow(color, row, array) {
+  array.push(new Piece.Rook(color, row, 0));
+  array.push(new Piece.Knight(color, row, 1));
+  array.push(new Piece.Bishop(color, row, 2));
+  array.push(new Piece.Queen(color, row, 3));
+  const king = new Piece.King(color, row, 4);
+  array.push(king);
+  array.push(new Piece.Bishop(color, row, 5));
+  array.push(new Piece.Knight(color, row, 6));
+  array.push(new Piece.Rook(color, row, 7));
+  return king;
+}

@@ -1,0 +1,20 @@
+.gameButtons {
+  border: solid black 2px;
+  display: flex;
+}
+
+.gameButton {
+}
+
+.changePlayerColor {
+  font-size: 1.3em;
+  font-family: "Playfair Display SC", serif;
+}
+.playAsWhite {
+  background-color: rgb(232, 235, 239);
+  flex: 1;
+}
+.playAsBlack {
+  background-color: rgb(125, 135, 150);
+  flex: 1;
+}

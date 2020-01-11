@@ -3,6 +3,7 @@ const BoardHelperFuncs = require("./boardHelperFunctions.js");
 
 class Piece {
   constructor(color, imgURL, row, col) {
+    // color is an integer; 0 for white, 1 for black
     this.color = color;
     this.imgURL = imgURL;
 
@@ -27,11 +28,11 @@ class Piece {
   hasBeenMoved() {}
 
   // checks whether king IS in check
-  static isKingInCheck(king, opponentPieces, board) {
+  static isKingInCheck(king, opponentPieces, board, playerColor) {
     for (let index in opponentPieces) {
       const opponentPiece = opponentPieces[index];
       // check whether king can be reached
-      const possibleMoves = opponentPiece.possibleMoves(board);
+      const possibleMoves = opponentPiece.possibleMoves(board, playerColor);
       for (let i in possibleMoves) {
         const move = possibleMoves[i];
         if (king.row === move[0] && king.col === move[1]) return true;
@@ -42,29 +43,34 @@ class Piece {
 
   /* checks whether king is in checkmate 
   (if king in check and no possible moves exist that do not result in check) */
-  static isKingInCheckmate(board, playerPieces, opponentPieces, king) {
+  static isKingInCheckmate(
+    board,
+    playerPieces,
+    opponentPieces,
+    king,
+    playerColor
+  ) {
     let possibleMoves = [];
     // add all possible moves by all player's pieces
     for (let index in playerPieces) {
       const playerPiece = playerPieces[index];
-      let possibleMovesByPiece = playerPiece.possibleMoves(board);
+      let possibleMovesByPiece = playerPiece.possibleMoves(board, playerColor);
       possibleMovesByPiece = playerPiece.filterMovesResultingInCheck(
         possibleMovesByPiece,
         opponentPieces,
         board,
         king
       );
-      console.log(playerPiece, possibleMovesByPiece);
       possibleMoves = possibleMoves.concat(possibleMovesByPiece);
     }
 
     return (
-      Piece.isKingInCheck(king, opponentPieces, board) &&
+      Piece.isKingInCheck(king, opponentPieces, board, playerColor) &&
       possibleMoves.length === 0
     );
   }
   // checks whether king WILL be in check after piece moves to new index
-  willKingBeInCheck(opponentPieces, board, king, newRow, newCol) {
+  willKingBeInCheck(opponentPieces, board, king, newRow, newCol, playerColor) {
     // change position of piece
     // make copy of board
     const boardCopy = BoardHelperFuncs.copyOfBoard(board);
@@ -87,7 +93,8 @@ class Piece {
     const kingInCheck = Piece.isKingInCheck(
       king,
       opponentPiecesCopy,
-      boardCopy
+      boardCopy,
+      playerColor
     );
 
     // change back index of piece
@@ -98,14 +105,21 @@ class Piece {
   }
 
   // filter possibleMoves to get rid of moves that would cause king to be in check
-  filterMovesResultingInCheck(possibleMoves, opponentPieces, board, king) {
+  filterMovesResultingInCheck(
+    possibleMoves,
+    opponentPieces,
+    board,
+    king,
+    playerColor
+  ) {
     return possibleMoves.filter(move => {
       return !this.willKingBeInCheck(
         opponentPieces,
         board,
         king,
         move[0],
-        move[1]
+        move[1],
+        playerColor
       );
     });
   }
@@ -239,7 +253,7 @@ class King extends Piece {
   }
 
   // possible moves that king can make
-  possibleMoves(board) {
+  possibleMoves(board, playerColor) {
     const currentRow = this.row;
     const currentCol = this.col;
 
@@ -287,7 +301,7 @@ class Queen extends Piece {
   }
 
   // possible moves that queen can make
-  possibleMoves(board) {
+  possibleMoves(board, playerColor) {
     const currentRow = this.row;
     const currentCol = this.col;
     const maxDimension = 8; // max units in any direction
@@ -337,7 +351,7 @@ class Bishop extends Piece {
   }
 
   // possible moves that bishop can make
-  possibleMoves(board) {
+  possibleMoves(board, playerColor) {
     const currentRow = this.row;
     const currentCol = this.col;
     const maxDimension = 8; // max units in any direction
@@ -382,7 +396,7 @@ class Knight extends Piece {
   }
 
   // possible moves that knight can make
-  possibleMoves(board) {
+  possibleMoves(board, playerColor) {
     const currentRow = this.row;
     const currentCol = this.col;
     const possibleMoves = [];
@@ -425,7 +439,7 @@ class Rook extends Piece {
     super(color, imgURL, row, col);
   }
   // possible moves that rook can make
-  possibleMoves(board) {
+  possibleMoves(board, playerColor) {
     const currentRow = this.row;
     const currentCol = this.col;
     const maxDimension = 8; // max units in any direction
@@ -475,14 +489,14 @@ class Pawn extends Piece {
   }
 
   // possible moves that pawn can make
-  possibleMoves(board) {
+  possibleMoves(board, playerColor) {
     const currentRow = this.row;
     const currentCol = this.col;
 
     const possibleMoves = [];
 
-    // direction for white
-    if (this.color === 0) {
+    // if pawn is player's pawn
+    if (this.color === playerColor) {
       // 1 unit forward
       if (
         this.indexInRange(currentRow - 1, currentCol) &&
@@ -512,7 +526,7 @@ class Pawn extends Piece {
         possibleMoves.push([currentRow - 1, currentCol - 1]);
       }
     }
-    // direction for black
+    // if pawn is opponent's pawn
     else {
       // 1 unit forward
       if (
