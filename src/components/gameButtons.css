@@ -1,11 +1,13 @@
 .gameButtons {
   border: solid black 2px;
-  display: flex;
 }
 
-.gameButton {
+.button {
+  margin-top: 2px;
+  cursor: pointer;
 }
 
+/* color buttons */
 .changePlayerColor {
   font-size: 1.3em;
   font-family: "Playfair Display SC", serif;
@@ -17,4 +19,21 @@
 .playAsBlack {
   background-color: rgb(125, 135, 150);
   flex: 1;
+}
+
+/* reset button font change and centering */
+.historyButton {
+  font-size: 1.5em;
+}
+.resetButton {
+  text-align: center;
+}
+
+/* get buttons on separate rows */
+.colorButtons {
+  width: 100%;
+  display: flex;
+}
+.resetButton {
+  width: 100%;
 }

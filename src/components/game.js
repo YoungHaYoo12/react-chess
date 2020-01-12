@@ -264,6 +264,10 @@ class Game extends React.Component {
     });
   }
 
+  // function for HistoryButton to allow user to reset game
+  reset() {
+    this.changePlayerColor(this.state.playerColor);
+  }
   render() {
     // get current board state which should be displayed
     const board = this.state.history[this.state.historyIndex].board;
@@ -289,6 +293,7 @@ class Game extends React.Component {
         <GameButtons
           changeToWhite={() => this.changePlayerColor(0)}
           changeToBlack={() => this.changePlayerColor(1)}
+          reset={() => this.reset()}
         />
       </div>
     );

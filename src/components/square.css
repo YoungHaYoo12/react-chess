@@ -1,5 +1,6 @@
 .square {
   flex: 1;
+  cursor: pointer;
 }
 
 /* code for light and dark squares of board*/
