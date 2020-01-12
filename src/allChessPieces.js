@@ -1,5 +1,5 @@
 // file contains list of all chess pieces that will be used in game
-const Piece = require("./chessPieceLogic.js");
+const Piece = require("./chessPiece.js");
 const numOfCols = 8;
 
 /* returns chess pieces of board depending on which color 

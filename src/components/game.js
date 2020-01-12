@@ -3,10 +3,10 @@ import Board from "./board";
 import RemovedPieces from "./removedPieces";
 import Title from "./title";
 import GameButtons from "./gameButtons";
-import allChessPieces from "../chessPieces.js";
+import allChessPieces from "../allChessPieces.js";
 import "./game.css";
 
-const PieceLogic = require("../chessPieceLogic.js");
+const ChessLogic = require("../chessLogic.js");
 const BoardHelperFuncs = require("../boardHelperFunctions.js");
 
 class Game extends React.Component {
@@ -31,9 +31,8 @@ class Game extends React.Component {
       historyIndex: 0,
       // possible moves possible for selected piece
       possibleMoves: [],
-      // keeps track of currently selected piece index
-      selectedPieceRow: null,
-      selectedPieceCol: null,
+      // keeps track of currently selected piece
+      selectedPiece: null,
       // keeps track of which player's turn it is (white:0,black:1)
       turnColor: 0,
       // keeps track of which player has won (-1 if no winner, 0 for white, 1 for black)
@@ -62,6 +61,7 @@ class Game extends React.Component {
     if (color === 0) return 1;
     return 0;
   }
+
   // move piece to another square
   squareClicked(row, col) {
     const board = this.state.history[this.state.historyIndex].board;
@@ -95,8 +95,7 @@ class Game extends React.Component {
 
       this.setState({
         possibleMoves: possibleMoves,
-        selectedPieceRow: row,
-        selectedPieceCol: col
+        selectedPiece: board[row][col]
       });
     }
 
@@ -113,10 +112,8 @@ class Game extends React.Component {
           let newBoard = BoardHelperFuncs.copyOfBoard(board);
           newBoard = this.updateBoard(
             newBoard,
-            this.state.selectedPieceRow,
-            this.state.selectedPieceCol,
-            row,
-            col
+            [this.state.selectedPiece],
+            [[row, col]]
           );
           // updated version of history
           const history = this.updateHistory(newBoard);
@@ -141,44 +138,65 @@ class Game extends React.Component {
     }
   }
 
-  // move chess piece
-  updateBoard(board, oldRow, oldCol, newRow, newCol) {
-    // piece to move
-    const pieceToMove = board[oldRow][oldCol];
+  /* move chess piece; returns array of pieces that have been removed from moves;
+piecesToMove is an array of pieces to move and newIndices is an array 
+of indices corresponding to elements in piecesToMove */
+  updateBoard(board, piecesToMove, newIndices) {
+    // variable containing all opponent pieces that are captured while moving piecesToMove
+    const opponentPiecesToRemove = [];
 
-    this.removeOpponentPiece(board, newRow, newCol);
+    // for each piece to move
+    for (let index in piecesToMove) {
+      const pieceToMove = piecesToMove[index];
+      const indexToMove = newIndices[index];
+      const rowToMove = indexToMove[0];
+      const colToMove = indexToMove[1];
 
-    // transfer piece
-    board[newRow][newCol] = pieceToMove;
-    board[oldRow][oldCol] = null;
+      // if there is enemy piece at new index, add it to opponentPiecesToRemove
+      const enemyPieceAtNewIndex = board[rowToMove][colToMove];
+      if (
+        enemyPieceAtNewIndex !== null &&
+        enemyPieceAtNewIndex.color !== pieceToMove.color
+      ) {
+        opponentPiecesToRemove.push(enemyPieceAtNewIndex);
+      }
 
-    // update pieceToMove's attributes
-    pieceToMove.updateIndex(newRow, newCol);
-    pieceToMove.hasBeenMoved();
+      // update boardCopy and indices of pieceToMove
+      board[pieceToMove.row][pieceToMove.col] = null;
+      board[rowToMove][colToMove] = pieceToMove;
+      pieceToMove.updateIndex(rowToMove, colToMove);
+      pieceToMove.hasBeenMoved();
+    }
+
+    // variable storing what color opponent's piece is
+    const opponentPieceColor = this.oppositeColor(piecesToMove[0].color);
+    this.removeOpponentPiece(board, opponentPiecesToRemove, opponentPieceColor);
 
     return board;
   }
 
   // helper function for updateBoard() to remove opponent piece from board
-  removeOpponentPiece(board, row, col) {
-    // if there was an opponent's piece at new index, get rid of that piece from board
-    const opponentPiece = board[row][col];
-    if (opponentPiece === null) return;
-
+  removeOpponentPiece(board, opponentPiecesToRemove, opponentPieceColor) {
     // create copies of piecesInPlay and piecesOffPlay
     let piecesInPlay = BoardHelperFuncs.copyOfBoard(this.state.piecesInPlay);
     let piecesOffPlay = BoardHelperFuncs.copyOfBoard(this.state.piecesOffPlay);
 
-    const opponentPieceColor = opponentPiece.color;
-    // update opponent pieces in play
+    // remove opponentPiecesToRemove from opponentPieces
     piecesInPlay[opponentPieceColor] = piecesInPlay[opponentPieceColor].filter(
       function(piece) {
-        return piece !== opponentPiece;
+        for (let index in opponentPiecesToRemove) {
+          const opponentPieceToRemove = opponentPiecesToRemove[index];
+          if (piece === opponentPieceToRemove) return false;
+        }
+        return true;
       }
     );
 
     // update opponent pieces off play
-    piecesOffPlay[opponentPieceColor].push(opponentPiece);
+    for (let index in opponentPiecesToRemove) {
+      const opponentPiece = opponentPiecesToRemove[index];
+      piecesOffPlay[opponentPieceColor].push(opponentPiece);
+    }
 
     this.setState({ piecesInPlay: piecesInPlay, piecesOffPlay: piecesOffPlay });
   }
@@ -206,7 +224,7 @@ class Game extends React.Component {
     let winner = -1;
     // white checkmated
     if (
-      PieceLogic.Piece.isKingInCheckmate(
+      ChessLogic.isKingInCheckmate(
         board,
         this.state.piecesInPlay[0],
         this.state.piecesInPlay[1],
@@ -218,7 +236,7 @@ class Game extends React.Component {
     }
     // black checkmated
     else if (
-      PieceLogic.Piece.isKingInCheckmate(
+      ChessLogic.isKingInCheckmate(
         board,
         this.state.piecesInPlay[1],
         this.state.piecesInPlay[0],
@@ -251,6 +269,7 @@ class Game extends React.Component {
       // keeps track of currently selected piece index
       selectedPieceRow: null,
       selectedPieceCol: null,
+      selectedPiece: null,
       // keeps track of which player's turn it is (white:0,black:1)
       turnColor: 0,
       // keeps track of which player has won (-1 if no winner, 0 for white, 1 for black)
