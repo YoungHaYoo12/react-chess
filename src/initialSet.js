@@ -1,10 +1,11 @@
-// file contains list of all chess pieces that will be used in game
+// file contains function that creates the initial players to be used in game
+import Player from "./player.js";
 const Piece = require("./chessPiece.js");
 const numOfCols = 8;
 
 /* returns chess pieces of board depending on which color 
 player chooses; playerColor is an integer: 0 for white,1 for black */
-export default function allChessPieces(playerColor) {
+export default function createPlayers(playerColor) {
   // ordered from front row to back row, left to right
   const allWhitePieces = [];
   const allBlackPieces = [];
@@ -27,8 +28,12 @@ export default function allChessPieces(playerColor) {
     whiteKing = fillInBackRow(0, 0, allWhitePieces);
   }
 
-  // return array of allWhitePieces, allBlackPieces, and a reference to two kings
-  return [allWhitePieces, allBlackPieces, [whiteKing, blackKing]];
+  // create players
+  const playerWhite = new Player(0, allWhitePieces, [], whiteKing);
+  const playerBlack = new Player(1, allBlackPieces, [], blackKing);
+
+  // return array of two players
+  return [playerWhite, playerBlack];
 }
 
 // helper function for allChessPieces that fills array with row of pawns

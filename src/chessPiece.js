@@ -2,7 +2,7 @@
 const ChessLogic = require("./chessLogic.js");
 
 class Piece {
-  constructor(color, imgURL, row, col) {
+  constructor(color, imgURL, name, row, col) {
     // color is an integer; 0 for white, 1 for black
     this.color = color;
     this.imgURL = imgURL;
@@ -10,14 +10,8 @@ class Piece {
     // coordinates on board
     this.row = row;
     this.col = col;
+    this.name = name;
     this.hasUsedFirstMove = false;
-  }
-
-  static get numOfRows() {
-    return 8;
-  }
-  static get numOfCols() {
-    return 8;
   }
 
   // updates index corresponding to Piece
@@ -32,13 +26,7 @@ class Piece {
   }
 
   // filter possibleMoves to get rid of moves that would cause king to be in check
-  filterMovesResultingInCheck(
-    possibleMoves,
-    opponentPieces,
-    board,
-    king,
-    playerColor
-  ) {
+  checkFilter(possibleMoves, opponentPieces, board, king, playerColor) {
     return possibleMoves.filter(move => {
       return !ChessLogic.willKingBeInCheck(
         board,
@@ -50,6 +38,10 @@ class Piece {
       );
     });
   }
+
+  /* add in castling options to possibleMoves if appropriate; actual code will only
+  be added for king */
+  castleFilter() {}
 
   // helper function to determine if enemy is at index
   enemyAtIndex(board, row, col) {
@@ -96,7 +88,7 @@ class King extends Piece {
         "https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg";
     }
 
-    super(color, imgURL, row, col);
+    super(color, imgURL, "king", row, col);
   }
 
   // possible moves that king can make
@@ -114,12 +106,6 @@ class King extends Piece {
     possibleMoves.push([currentRow - 1, currentCol + 1]);
     possibleMoves.push([currentRow + 1, currentCol - 1]);
     possibleMoves.push([currentRow + 1, currentCol + 1]);
-    // king's side castling
-    //if (this.canKingSideCastle)
-    //possibleMoves.push([currentRow, currentCol + 2]);
-    // queen's side castling
-    //if (this.canQueenSideCastle)
-    //possibleMoves.push([currentRow, currentCol - 3]);
 
     return possibleMoves.filter(move => {
       return this.isValidMove(
@@ -131,8 +117,11 @@ class King extends Piece {
         move[1]
       );
     });
+  }
 
-    // add castling later
+  // add in possible moves for castling
+  castleFilter(board, oppPieces, playerColor, possibleMoves) {
+    ChessLogic.castleFilter(board, this, oppPieces, playerColor, possibleMoves);
   }
 }
 
@@ -150,7 +139,7 @@ class Queen extends Piece {
         "https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg";
     }
 
-    super(color, imgURL, row, col);
+    super(color, imgURL, "queen", row, col);
   }
 
   // possible moves that queen can make
@@ -200,7 +189,7 @@ class Bishop extends Piece {
         "https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg";
     }
 
-    super(color, imgURL, row, col);
+    super(color, imgURL, "bishop", row, col);
   }
 
   // possible moves that bishop can make
@@ -245,7 +234,7 @@ class Knight extends Piece {
         "https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg";
     }
 
-    super(color, imgURL, row, col);
+    super(color, imgURL, "knight", row, col);
   }
 
   // possible moves that knight can make
@@ -289,7 +278,7 @@ class Rook extends Piece {
         "https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg";
     }
 
-    super(color, imgURL, row, col);
+    super(color, imgURL, "rook", row, col);
   }
 
   // possible moves that rook can make
@@ -334,7 +323,7 @@ class Pawn extends Piece {
         "https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg";
     }
 
-    super(color, imgURL, row, col);
+    super(color, imgURL, "pawn", row, col);
   }
 
   // possible moves that pawn can make

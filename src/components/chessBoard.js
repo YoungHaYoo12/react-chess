@@ -2,9 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom";
 import Square from "./square";
 
-import "./board.css";
+import "./chessBoard.css";
 
-class Board extends React.Component {
+class ChessBoard extends React.Component {
   constructor(props) {
     super(props);
   }
@@ -27,7 +27,7 @@ class Board extends React.Component {
       <Square
         colorClassName={colorClassName}
         highlightClassName={highlightClassName}
-        value={this.props.board[row][col]}
+        value={this.props.board.pieceAt(row, col)}
         onClick={() => this.props.squareClicked(row, col)}
       />
     );
@@ -63,4 +63,4 @@ class Board extends React.Component {
   }
 }
 
-export default Board;
+export default ChessBoard;
