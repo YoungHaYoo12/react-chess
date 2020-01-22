@@ -19,7 +19,7 @@ class Game extends React.Component {
     this.numOfRows = 8;
     this.numOfCols = 8;
     // set up initial players and board
-    const initialPlayers = createPlayers(0);
+    const initialPlayers = createPlayers();
     const initialBoard = new Board(8, 8, null);
     initialBoard.makeStartBoard(
       initialPlayers[0].getInPlay(),
@@ -50,8 +50,8 @@ class Game extends React.Component {
   squareClicked(row, col) {
     const board = this.getCurrBoard();
     const piece = board.pieceAt(row, col);
+    const king = this.getCurrKing();
     const oppPieces = this.getOppPieces();
-    const playerCol = this.state.gameInfo.getPlayerColor();
 
     // code for player to select a piece to move
     if (!this.isPossibleMove(row, col)) {
@@ -61,11 +61,7 @@ class Game extends React.Component {
         return;
 
       // create a list of possible moves for the piece
-      let king = this.getCurrKing();
-      let moves = piece.possibleMoves(board, playerCol);
-      // filter out moves resulting in check and add castling if applicable
-      moves = piece.checkFilter(moves, oppPieces, board, king, playerCol);
-      piece.castleFilter(board, oppPieces, playerCol, moves);
+      const moves = piece.filteredMoves(board, king, oppPieces);
 
       this.setState({
         possibleMoves: moves,
@@ -84,15 +80,11 @@ class Game extends React.Component {
         // continue if player does not choose among possible moves
         if (!Helper.moveMatchesIndex(move, row, col)) continue;
         // king-side castling picked
-        if (
-          ChessLogic.isKCastle(board, selectedPiece, oppPieces, playerCol, move)
-        ) {
+        if (ChessLogic.isKCastle(board, selectedPiece, oppPieces, move)) {
           newBoard = this.updateBoardCastle(board, selectedPiece, true);
         }
         // queen-side castling picked
-        else if (
-          ChessLogic.isQCastle(board, selectedPiece, oppPieces, playerCol, move)
-        ) {
+        else if (ChessLogic.isQCastle(board, selectedPiece, oppPieces, move)) {
           newBoard = this.updateBoardCastle(board, selectedPiece, false);
         }
         // regular single-piece update
@@ -111,17 +103,43 @@ class Game extends React.Component {
           this.getKing(1)
         );
 
-        this.setState({
-          history: history,
-          historyIndex: this.state.historyIndex + 1,
-          possibleMoves: [],
-          gameInfo: this.state.gameInfo
-        });
+        this.setState(
+          {
+            history: history,
+            historyIndex: this.state.historyIndex + 1,
+            possibleMoves: [],
+            gameInfo: this.state.gameInfo
+          },
+          function() {
+            if (this.state.gameInfo.isCPUTurn()) {
+              this.AIClick();
+            }
+          }
+        );
 
         break;
       }
       return;
     }
+  }
+  async AIClick() {
+    const CPUCol = this.state.gameInfo.getTurn();
+    // get random piece from CPU pieces
+    const CPU = this.getPlayer(CPUCol);
+    const piece = CPU.getInPlay()[0];
+
+    // Promise to wait for piece to be selected
+    let selectPiece = (row, col) => {
+      return new Promise((resolve, reject) => {
+        this.squareClicked(row, col);
+        resolve();
+      });
+    };
+    // select move after piece has been selected
+    await selectPiece(piece.row, piece.col).then(() => {
+      const chosenMove = this.state.possibleMoves[0];
+      this.squareClicked(chosenMove[0], chosenMove[1]);
+    });
   }
 
   /* move chess piece; returns array of pieces that have been removed from moves;
@@ -279,7 +297,7 @@ of indices corresponding to elements in piecesToMove */
 
   // function for HistoryButton to allow user to reset game
   reset(playerColor = 0) {
-    const initialPlayers = createPlayers(playerColor);
+    const initialPlayers = createPlayers();
     const initialBoard = new Board(8, 8, null);
     initialBoard.makeStartBoard(
       initialPlayers[0].getInPlay(),
@@ -308,25 +326,42 @@ of indices corresponding to elements in piecesToMove */
   render() {
     // get current board state which should be displayed
     const board = this.getCurrBoard();
+
+    /* rotate board-container if player chooses black color; also pass
+     along argument to ChessBoard and RemovedPieces to rotate them as well */
+    const playerColor = this.state.gameInfo.getUserColor();
+    let colorClassName = "";
+    playerColor === 0
+      ? (colorClassName = "")
+      : (colorClassName = "playerIsBlack");
+
+    // rotate board-container if player chooses black color; also pass
+    // along argument to ChessBoard and RemovedPieces to rotate them as well
+    const boardContainerClassName = "board-container " + colorClassName;
+
     return (
       <div className="game">
         <Title
           turnColor={this.state.gameInfo.getTurn()}
           winner={this.state.gameInfo.getWinStatus()}
         />
-        <div className="board-container">
+        <div className={boardContainerClassName}>
           <RemovedPieces
             className="whiteRemovedPieces"
             pieces={this.getPiecesOffPlay(0)}
+            playerColor={playerColor}
+            colorClassName={colorClassName}
           />
           <ChessBoard
             board={board}
             squareClicked={(row, col) => this.squareClicked(row, col)}
             possibleMoves={this.state.possibleMoves}
+            colorClassName={colorClassName}
           />
           <RemovedPieces
             className="blackRemovedPieces"
             pieces={this.getPiecesOffPlay(1)}
+            colorClassName={colorClassName}
           />
         </div>
         <GameButtons

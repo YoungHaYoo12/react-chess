@@ -10,7 +10,12 @@ function Square(props) {
   }
 
   const className =
-    "square " + props.colorClassName + " " + props.highlightClassName;
+    "square " +
+    props.squareColor +
+    " " +
+    props.highlightClassName +
+    " " +
+    props.colorClassName;
 
   return (
     <button className={className} onClick={props.onClick}>

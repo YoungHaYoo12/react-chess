@@ -15,3 +15,8 @@
 .highlight {
   background-color: #35d6ed;
 }
+
+/* rotate pieces if player chooses black color */
+.playerIsBlack {
+  transform: rotate(180deg);
+}

@@ -11,10 +11,13 @@ class ChessBoard extends React.Component {
 
   renderSquare(row, col) {
     // determine whether square should be colored or not
-    let colorClassName = "light";
+    let squareColor = "light";
     if ((row + col) % 2 === 1) {
-      colorClassName = "dark";
+      squareColor = "dark";
     }
+    // rotate pieces if player chooses black color
+    const colorClassName = this.props.colorClassName;
+
     // mark squares to be highlighted
     let highlightClassName = "";
     const possibleMoves = this.props.possibleMoves;
@@ -25,6 +28,7 @@ class ChessBoard extends React.Component {
 
     return (
       <Square
+        squareColor={squareColor}
         colorClassName={colorClassName}
         highlightClassName={highlightClassName}
         value={this.props.board.pieceAt(row, col)}

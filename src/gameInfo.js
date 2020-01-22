@@ -3,13 +3,13 @@
 const ChessLogic = require("./chessLogic.js");
 
 export default class GameInfo {
-  constructor(turn, winStatus, playerColor) {
+  constructor(turn, winStatus, userColor) {
     // keeps track of whose turn it is (0 for white, 1 for black)
     this.turn = 0;
     // keeps track of winning status (no win: -1, white win:0, black win: 1)
     this.winStatus = -1;
     // keeps track of which color that player chose to be
-    this.playerColor = playerColor;
+    this.userColor = userColor;
   }
   // opposite color
   static oppColor(color) {
@@ -22,32 +22,60 @@ export default class GameInfo {
   }
   // update win status
   updateWinStatus(board, whitePieces, whiteKing, blackPieces, blackKing) {
-    // white checkmated
-    if (
-      ChessLogic.isKingInCheckmate(
-        board,
-        whitePieces,
-        blackPieces,
-        whiteKing,
-        this.getPlayerColor()
-      )
-    ) {
-      this.winStatus = 1;
-    }
-    // black checkmated
-    else if (
-      ChessLogic.isKingInCheckmate(
-        board,
-        blackPieces,
-        whitePieces,
-        blackKing,
-        this.getPlayerColor()
-      )
-    ) {
-      this.winStatus = 0;
-    }
+    this.winStatus = this.evaluateWinStatus(
+      board,
+      whitePieces,
+      whiteKing,
+      blackPieces,
+      blackKing
+    );
   }
 
+  // returns the win status of board
+  evaluateWinStatus(board, whitePieces, whiteKing, blackPieces, blackKing) {
+    // white checkmated (player black wins)
+    if (
+      ChessLogic.isKingInCheckmate(board, whitePieces, blackPieces, whiteKing)
+    ) {
+      return 1;
+    }
+    // black checkmated (player white wins)
+    else if (
+      ChessLogic.isKingInCheckmate(board, blackPieces, whitePieces, blackKing)
+    ) {
+      return 0;
+    }
+    return -1;
+  }
+
+  // returns whether player won
+  isPlayerWinner(board, whitePieces, whiteKing, blackPieces, blackKing) {
+    const winStatus = this.evaluateWinStatus(
+      board,
+      whitePieces,
+      whiteKing,
+      blackPieces,
+      blackKing
+    );
+    return winStatus === this.getUserColor();
+  }
+
+  // returns whether CPU won
+  isCPUWinner(board, whitePieces, whiteKing, blackPieces, blackKing) {
+    const winStatus = this.evaluateWinStatus(
+      board,
+      whitePieces,
+      whiteKing,
+      blackPieces,
+      blackKing
+    );
+    return winStatus === this.getCPUColor();
+  }
+
+  // returns if it is CPU's turn
+  isCPUTurn() {
+    return this.getTurn() !== this.getUserColor();
+  }
   // is there a win
   isWin() {
     return this.winStatus !== -1;
@@ -65,8 +93,13 @@ export default class GameInfo {
   }
 
   // get player color
-  getPlayerColor() {
-    return this.playerColor;
+  getUserColor() {
+    return this.userColor;
+  }
+
+  // get CPU color
+  getCPUColor() {
+    return this.oppColor(this.getUserColor());
   }
 
   // get win status
@@ -85,7 +118,7 @@ export default class GameInfo {
     return new GameInfo(
       gameInfo.getTurn(),
       gameInfo.getWinStatus(),
-      gameInfo.getPlayerColor()
+      gameInfo.getUserColor()
     );
   }
 }

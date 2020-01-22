@@ -23,3 +23,7 @@
 .blackRemovedPieces {
   background-color: rgb(125, 135, 150);
 }
+
+.playerIsBlack {
+  transform: rotate(180deg);
+}

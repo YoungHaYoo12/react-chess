@@ -26,12 +26,11 @@ class Piece {
   }
 
   // filter possibleMoves to get rid of moves that would cause king to be in check
-  checkFilter(possibleMoves, opponentPieces, board, king, playerColor) {
+  checkFilter(possibleMoves, opponentPieces, board, king) {
     return possibleMoves.filter(move => {
       return !ChessLogic.willKingBeInCheck(
         board,
         king,
-        playerColor,
         opponentPieces,
         [this],
         [move]
@@ -39,9 +38,22 @@ class Piece {
     });
   }
 
+  // returns filtered possible moves
+  filteredMoves(board, king, opponentPieces) {
+    const unfilteredMoves = this.possibleMoves(board);
+    const filteredMoves = this.checkFilter(
+      unfilteredMoves,
+      opponentPieces,
+      board,
+      king
+    );
+    this.castleFilter(board, opponentPieces, filteredMoves);
+    return filteredMoves;
+  }
+
   /* add in castling options to possibleMoves if appropriate; actual code will only
   be added for king */
-  castleFilter() {}
+  castleFilter(board, oppPieces, possibleMoves) {}
 
   // helper function to determine if enemy is at index
   enemyAtIndex(board, row, col) {
@@ -51,7 +63,7 @@ class Piece {
   }
 
   // is move valid?
-  isValidMove(board, isKnight, startRow, startCol, endRow, endCol) {
+  isValidMove(board, startRow, startCol, endRow, endCol) {
     // check if end indices are in range
     if (!ChessLogic.indexInRange(endRow, endCol)) {
       return false;
@@ -60,7 +72,7 @@ class Piece {
     /* check if any pieces are between start and end indices; if knight,
         ignore this check*/
     if (
-      !isKnight &&
+      this.name !== "knight" &&
       ChessLogic.piecesBlockingMove(board, startRow, startCol, endRow, endCol)
     ) {
       return false;
@@ -92,7 +104,7 @@ class King extends Piece {
   }
 
   // possible moves that king can make
-  possibleMoves(board, playerColor) {
+  possibleMoves(board) {
     const currentRow = this.row;
     const currentCol = this.col;
 
@@ -108,20 +120,13 @@ class King extends Piece {
     possibleMoves.push([currentRow + 1, currentCol + 1]);
 
     return possibleMoves.filter(move => {
-      return this.isValidMove(
-        board,
-        false,
-        currentRow,
-        currentCol,
-        move[0],
-        move[1]
-      );
+      return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
 
   // add in possible moves for castling
-  castleFilter(board, oppPieces, playerColor, possibleMoves) {
-    ChessLogic.castleFilter(board, this, oppPieces, playerColor, possibleMoves);
+  castleFilter(board, oppPieces, possibleMoves) {
+    ChessLogic.castleFilter(board, this, oppPieces, possibleMoves);
   }
 }
 
@@ -143,7 +148,7 @@ class Queen extends Piece {
   }
 
   // possible moves that queen can make
-  possibleMoves(board, playerColor) {
+  possibleMoves(board) {
     const currentRow = this.row;
     const currentCol = this.col;
     const maxDimension = 8; // max units in any direction
@@ -164,14 +169,7 @@ class Queen extends Piece {
     }
 
     return possibleMoves.filter(move => {
-      return this.isValidMove(
-        board,
-        false,
-        currentRow,
-        currentCol,
-        move[0],
-        move[1]
-      );
+      return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
 }
@@ -193,7 +191,7 @@ class Bishop extends Piece {
   }
 
   // possible moves that bishop can make
-  possibleMoves(board, playerColor) {
+  possibleMoves(board) {
     const currentRow = this.row;
     const currentCol = this.col;
     const maxDimension = 8; // max units in any direction
@@ -209,14 +207,7 @@ class Bishop extends Piece {
     }
 
     return possibleMoves.filter(move => {
-      return this.isValidMove(
-        board,
-        false,
-        currentRow,
-        currentCol,
-        move[0],
-        move[1]
-      );
+      return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
 }
@@ -238,7 +229,7 @@ class Knight extends Piece {
   }
 
   // possible moves that knight can make
-  possibleMoves(board, playerColor) {
+  possibleMoves(board) {
     const currentRow = this.row;
     const currentCol = this.col;
     const possibleMoves = [];
@@ -253,14 +244,7 @@ class Knight extends Piece {
     possibleMoves.push([currentRow - 1, currentCol + 2]);
 
     return possibleMoves.filter(move => {
-      return this.isValidMove(
-        board,
-        true,
-        currentRow,
-        currentCol,
-        move[0],
-        move[1]
-      );
+      return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
 }
@@ -282,7 +266,7 @@ class Rook extends Piece {
   }
 
   // possible moves that rook can make
-  possibleMoves(board, playerColor) {
+  possibleMoves(board) {
     const currentRow = this.row;
     const currentCol = this.col;
     const maxDimension = 8; // max units in any direction
@@ -298,14 +282,7 @@ class Rook extends Piece {
     }
 
     return possibleMoves.filter(move => {
-      return this.isValidMove(
-        board,
-        false,
-        currentRow,
-        currentCol,
-        move[0],
-        move[1]
-      );
+      return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
 }
@@ -327,14 +304,13 @@ class Pawn extends Piece {
   }
 
   // possible moves that pawn can make
-  possibleMoves(board, playerColor) {
+  possibleMoves(board) {
     const currentRow = this.row;
     const currentCol = this.col;
 
     const possibleMoves = [];
-
-    // if pawn is player's pawn
-    if (this.color === playerColor) {
+    // if pawn is white
+    if (this.color === 0) {
       // 1 unit forward
       if (
         ChessLogic.indexInRange(currentRow - 1, currentCol) &&
@@ -364,7 +340,7 @@ class Pawn extends Piece {
         possibleMoves.push([currentRow - 1, currentCol - 1]);
       }
     }
-    // if pawn is opponent's pawn
+    // if pawn is black
     else {
       // 1 unit forward
       if (
@@ -397,14 +373,7 @@ class Pawn extends Piece {
     }
 
     return possibleMoves.filter(move => {
-      return this.isValidMove(
-        board,
-        false,
-        currentRow,
-        currentCol,
-        move[0],
-        move[1]
-      );
+      return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
 }

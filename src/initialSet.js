@@ -5,28 +5,17 @@ const numOfCols = 8;
 
 /* returns chess pieces of board depending on which color 
 player chooses; playerColor is an integer: 0 for white,1 for black */
-export default function createPlayers(playerColor) {
+export default function createPlayers() {
   // ordered from front row to back row, left to right
   const allWhitePieces = [];
   const allBlackPieces = [];
   let whiteKing;
   let blackKing;
 
-  // if player chooses white
-  if (playerColor === 0) {
-    fillInFrontRow(0, 6, allWhitePieces);
-    whiteKing = fillInBackRow(0, 7, allWhitePieces);
-    fillInFrontRow(1, 1, allBlackPieces);
-    blackKing = fillInBackRow(1, 0, allBlackPieces);
-  }
-
-  // if player chooses black
-  else {
-    fillInFrontRow(1, 6, allBlackPieces);
-    blackKing = fillInBackRow(1, 7, allBlackPieces);
-    fillInFrontRow(0, 1, allWhitePieces);
-    whiteKing = fillInBackRow(0, 0, allWhitePieces);
-  }
+  fillInFrontRow(0, 6, allWhitePieces);
+  whiteKing = fillInBackRow(0, 7, allWhitePieces);
+  fillInFrontRow(1, 1, allBlackPieces);
+  blackKing = fillInBackRow(1, 0, allBlackPieces);
 
   // create players
   const playerWhite = new Player(0, allWhitePieces, [], whiteKing);

@@ -12,3 +12,7 @@
 
 .title {
 }
+
+.playerIsBlack {
+  transform: rotate(180deg);
+}
