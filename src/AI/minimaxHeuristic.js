@@ -114,7 +114,7 @@ export default function evaluateHeuristic(board, userColor) {
   let heuristicScore = 0;
   for (let row = 0; row < numOfRows; row++) {
     for (let col = 0; col < numOfCols; col++) {
-      heuristicScore += pieceVal(board[row][col], userColor);
+      heuristicScore += pieceVal(board.pieceAt(row, col), userColor);
     }
   }
   return heuristicScore;

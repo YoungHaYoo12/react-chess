@@ -10,8 +10,7 @@ function copyOfArray(array) {
 // helper function to filter out pieces from array
 function filterOut(array, piecesToRemove) {
   return array.filter(function(piece) {
-    for (let index in piecesToRemove) {
-      const pieceToRemove = piecesToRemove[index];
+    for (let pieceToRemove of piecesToRemove) {
       if (piece === pieceToRemove) {
         return false;
       }
@@ -22,8 +21,8 @@ function filterOut(array, piecesToRemove) {
 
 // helper function to insert pieces into array
 function insertIntoArray(array, pieces) {
-  for (let index in pieces) {
-    array.push(pieces[index]);
+  for (let piece of pieces) {
+    array.push(piece);
   }
 }
 

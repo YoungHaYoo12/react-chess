@@ -5,9 +5,9 @@ const ChessLogic = require("./chessLogic.js");
 export default class GameInfo {
   constructor(turn, winStatus, userColor) {
     // keeps track of whose turn it is (0 for white, 1 for black)
-    this.turn = 0;
+    this.turn = turn;
     // keeps track of winning status (no win: -1, white win:0, black win: 1)
-    this.winStatus = -1;
+    this.winStatus = winStatus;
     // keeps track of which color that player chose to be
     this.userColor = userColor;
   }

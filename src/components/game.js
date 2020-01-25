@@ -4,13 +4,14 @@ import RemovedPieces from "./removedPieces";
 import Title from "./title";
 import GameButtons from "./gameButtons";
 import createPlayers from "../initialSet.js";
-import Player from "../player.js";
 import GameInfo from "../gameInfo.js";
 import Board from "../board.js";
+import aiTurn from "../AI/AI.js";
 import "./game.css";
 
 const ChessLogic = require("../chessLogic.js");
 const Helper = require("../helperFunctions.js");
+const Piece = require("../chessPiece.js");
 
 class Game extends React.Component {
   constructor(props) {
@@ -50,8 +51,9 @@ class Game extends React.Component {
   squareClicked(row, col) {
     const board = this.getCurrBoard();
     const piece = board.pieceAt(row, col);
-    const king = this.getCurrKing();
+    const playerKing = this.getCurrKing();
     const oppPieces = this.getOppPieces();
+    const players = this.state.players;
 
     // code for player to select a piece to move
     if (!this.isPossibleMove(row, col)) {
@@ -61,7 +63,7 @@ class Game extends React.Component {
         return;
 
       // create a list of possible moves for the piece
-      const moves = piece.filteredMoves(board, king, oppPieces);
+      const moves = piece.filteredMoves(board, playerKing, oppPieces);
 
       this.setState({
         possibleMoves: moves,
@@ -74,22 +76,32 @@ class Game extends React.Component {
       const possibleMoves = this.state.possibleMoves;
       const selectedPiece = this.state.selectedPiece;
       let newBoard;
+      let newPlayers;
 
-      for (const index in possibleMoves) {
-        const move = possibleMoves[index];
+      for (const move of possibleMoves) {
         // continue if player does not choose among possible moves
         if (!Helper.moveMatchesIndex(move, row, col)) continue;
         // king-side castling picked
         if (ChessLogic.isKCastle(board, selectedPiece, oppPieces, move)) {
-          newBoard = this.updateBoardCastle(board, selectedPiece, true);
+          newPlayers = board.removeCapturedCastle(selectedPiece, true, players);
+          newBoard = board.updateBoardCastle(selectedPiece, true);
+          Piece.Piece.updatePiecesCastle(board, selectedPiece, true);
         }
         // queen-side castling picked
         else if (ChessLogic.isQCastle(board, selectedPiece, oppPieces, move)) {
-          newBoard = this.updateBoardCastle(board, selectedPiece, false);
+          newPlayers = board.removeCapturedCastle(
+            selectedPiece,
+            false,
+            players
+          );
+          newBoard = board.updateBoardCastle(selectedPiece, false);
+          Piece.Piece.updatePiecesCastle(board, selectedPiece, false);
         }
         // regular single-piece update
         else {
-          newBoard = this.updateBoardPiece(board, selectedPiece, move);
+          newPlayers = board.removeCapturedPiece(selectedPiece, move, players);
+          newBoard = board.updateBoardPiece(selectedPiece, move);
+          Piece.Piece.updatePiece(selectedPiece, move);
         }
 
         const history = this.updateHistory(newBoard);
@@ -97,10 +109,10 @@ class Game extends React.Component {
         // update game info
         this.state.gameInfo.updateGameInfo(
           newBoard,
-          this.getInPlay(0),
-          this.getKing(0),
-          this.getInPlay(1),
-          this.getKing(1)
+          newPlayers[0].getInPlay(),
+          newPlayers[0].getKing(),
+          newPlayers[1].getInPlay(),
+          newPlayers[1].getKing()
         );
 
         this.setState(
@@ -108,8 +120,10 @@ class Game extends React.Component {
             history: history,
             historyIndex: this.state.historyIndex + 1,
             possibleMoves: [],
-            gameInfo: this.state.gameInfo
+            gameInfo: this.state.gameInfo,
+            players: newPlayers
           },
+
           function() {
             if (this.state.gameInfo.isCPUTurn()) {
               this.AIClick();
@@ -122,106 +136,30 @@ class Game extends React.Component {
       return;
     }
   }
+
   async AIClick() {
-    const CPUCol = this.state.gameInfo.getTurn();
     // get random piece from CPU pieces
-    const CPU = this.getPlayer(CPUCol);
-    const piece = CPU.getInPlay()[0];
+    const minimaxResult = aiTurn(
+      this.getCurrBoard(),
+      this.state.players,
+      this.state.gameInfo,
+      2
+    );
+    const piece = minimaxResult[0];
+    const move = minimaxResult[1];
 
     // Promise to wait for piece to be selected
     let selectPiece = (row, col) => {
       return new Promise((resolve, reject) => {
-        this.squareClicked(row, col);
+        this.squareClicked(piece.row, piece.col);
         resolve();
       });
     };
     // select move after piece has been selected
     await selectPiece(piece.row, piece.col).then(() => {
-      const chosenMove = this.state.possibleMoves[0];
+      const chosenMove = move;
       this.squareClicked(chosenMove[0], chosenMove[1]);
     });
-  }
-
-  /* move chess piece; returns array of pieces that have been removed from moves;
-piecesToMove is an array of pieces to move and newIndices is an array 
-of indices corresponding to elements in piecesToMove */
-  updateBoard(board, piecesToMove, newIndices) {
-    // copy of board
-    let newBoard = Board.copyOfBoard(board);
-
-    // variable containing all opponent pieces that are captured while moving piecesToMove
-    const opponentPiecesToRemove = [];
-
-    // for each piece to move
-    for (let index in piecesToMove) {
-      const pieceToMove = piecesToMove[index];
-      const indexToMove = newIndices[index];
-
-      // if there is enemy piece at new index, add it to opponentPiecesToRemove
-      const oppPiece = newBoard.pieceAt(indexToMove[0], indexToMove[1]);
-      if (oppPiece !== null && oppPiece.color !== pieceToMove.color) {
-        opponentPiecesToRemove.push(oppPiece);
-      }
-
-      // update newBoard and indices of pieceToMove
-      newBoard.moveTo(indexToMove[0], indexToMove[1], pieceToMove);
-      pieceToMove.updateIndex(indexToMove[0], indexToMove[1]);
-      pieceToMove.hasBeenMoved();
-    }
-
-    // remove opponent pieces from piecesInPlay
-    const oppColor = GameInfo.oppColor(piecesToMove[0].color);
-    this.removeOppPiece(opponentPiecesToRemove, oppColor);
-
-    return newBoard;
-  }
-
-  // update board for single piece being moved
-  updateBoardPiece(board, piece, move) {
-    return this.updateBoard(board, [piece], [move]);
-  }
-
-  // update board for castling
-  updateBoardCastle(board, king, isKingSideCastle) {
-    let rook;
-    let newKingCol;
-    let newRookCol;
-    const piecesToMove = [];
-    const newIndices = [];
-    // if king-side castling
-    if (isKingSideCastle) {
-      rook = ChessLogic.getKingSideRook(board, king);
-      newKingCol = king.col + 2;
-      newRookCol = rook.col - 2;
-    } else {
-      rook = ChessLogic.getQueenSideRook(board, king);
-      newKingCol = king.col - 2;
-      newRookCol = rook.col + 3;
-    }
-
-    // insert piecesToMove and newIndices
-    piecesToMove.push(king);
-    piecesToMove.push(rook);
-    newIndices.push([king.row, newKingCol]);
-    newIndices.push([rook.row, newRookCol]);
-
-    return this.updateBoard(board, piecesToMove, newIndices);
-  }
-
-  // helper function for updateBoard() to remove opponent piece from board
-  removeOppPiece(oppPieces, oppColor) {
-    // create copy of two players
-    let playerWhite = Player.copyPlayer(this.getPlayer(0));
-    let playerBlack = Player.copyPlayer(this.getPlayer(1));
-    // mark which one is opponent
-    let opponent;
-    oppColor === 0 ? (opponent = playerWhite) : (opponent = playerBlack);
-
-    // update inPlay and offPlay of opponent
-    opponent.updateInPlay(oppPieces);
-    opponent.updateOffPlay(oppPieces);
-
-    this.setState({ players: [playerWhite, playerBlack] });
   }
 
   // helper function to add currentBoard to the history array
@@ -245,8 +183,7 @@ of indices corresponding to elements in piecesToMove */
   /* helper function for squareClicked() to check if player has clicked 
   among possible moves */
   isPossibleMove(row, col) {
-    for (const index in this.state.possibleMoves) {
-      const move = this.state.possibleMoves[index];
+    for (const move of this.state.possibleMoves) {
       if (row === move[0] && col === move[1]) return true;
     }
     return false;

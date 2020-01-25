@@ -1,4 +1,3 @@
-import Board from "./board.js";
 const Helper = require("./helperFunctions.js");
 
 // helper module for chessPiece.js containing logic of chess moves
@@ -83,13 +82,11 @@ function piecesBlockingMove(board, startRow, startCol, endRow, endCol) {
 }
 
 // function to check whether a square is under check
-function isSquareInCheck(board, row, col, opponentPieces) {
-  for (let index in opponentPieces) {
-    const opponentPiece = opponentPieces[index];
+function isSquareInCheck(board, row, col, oppPieces) {
+  for (let oppPiece of oppPieces) {
     // check whether square can be reached
-    const possibleMoves = opponentPiece.possibleMoves(board);
-    for (let i in possibleMoves) {
-      const move = possibleMoves[i];
+    const possibleMoves = oppPiece.possibleMoves(board);
+    for (let move of possibleMoves) {
       if (Helper.moveMatchesIndex(move, row, col)) return true;
     }
   }
@@ -97,28 +94,31 @@ function isSquareInCheck(board, row, col, opponentPieces) {
 }
 
 // checks whether king IS in check
-function isKingInCheck(board, king, opponentPieces) {
-  return isSquareInCheck(board, king.row, king.col, opponentPieces);
+function isKingInCheck(board, playerKing, oppPieces) {
+  return isSquareInCheck(board, playerKing.row, playerKing.col, oppPieces);
 }
 
 /* checks whether king is in checkmate 
   (if king in check and no possible moves exist that do not result in check) */
-function isKingInCheckmate(board, playerPieces, opponentPieces, king) {
+function isKingInCheckmate(board, playerPieces, oppPieces, playerKing) {
   let possibleMoves = [];
+  let test = [];
   // add all possible moves by all player's pieces
-  for (let index in playerPieces) {
-    const playerPiece = playerPieces[index];
+  for (let playerPiece of playerPieces) {
     let possibleMovesByPiece = playerPiece.filteredMoves(
       board,
-      king,
-      opponentPieces
+      playerKing,
+      oppPieces
     );
 
     possibleMoves = possibleMoves.concat(possibleMovesByPiece);
+    if (possibleMovesByPiece.length !== 0) {
+      test.push([playerPiece, possibleMovesByPiece]);
+    }
   }
 
   return (
-    isKingInCheck(board, king, opponentPieces) && possibleMoves.length === 0
+    isKingInCheck(board, playerKing, oppPieces) && possibleMoves.length === 0
   );
 }
 
@@ -128,16 +128,16 @@ of indices corresponding to elements in piecesToMove
 */
 function willKingBeInCheck(
   board,
-  king,
-  opponentPieces,
+  playerKing,
+  oppPieces,
   piecesToMove,
   newIndices
 ) {
   // make copy of board
-  const boardCopy = Board.copyOfBoard(board);
+  const boardCopy = board.copyOfBoard();
 
   // variable containing all opponent pieces that are captured while moving piecesToMove
-  const opponentPiecesToRemove = [];
+  const capturedOppPieces = [];
 
   // variable containing all original indices of piecesToMove
   const originalIndices = [];
@@ -151,7 +151,7 @@ function willKingBeInCheck(
 
     // if there is enemy piece at new index, add it to opponentPiecesToRemove
     const enemyPieceAtNewIndex = boardCopy.pieceAt(rowToMove, colToMove);
-    opponentPiecesToRemove.push(enemyPieceAtNewIndex);
+    capturedOppPieces.push(enemyPieceAtNewIndex);
 
     // add original index of pieceToMove to originalIndices
     originalIndices.push([pieceToMove.row, pieceToMove.col]);
@@ -163,15 +163,14 @@ function willKingBeInCheck(
   }
 
   // remove opponentPiecesToRemove from opponentPieces
-  const opponentPiecesCopy = opponentPieces.filter(function(piece) {
-    for (let index in opponentPiecesToRemove) {
-      const opponentPieceToRemove = opponentPiecesToRemove[index];
-      if (piece === opponentPieceToRemove) return false;
+  const oppPiecesCopy = oppPieces.filter(function(piece) {
+    for (let capturedOppPiece of capturedOppPieces) {
+      if (piece === capturedOppPiece) return false;
     }
     return true;
   });
   // check whether king would be in check
-  const kingInCheck = isKingInCheck(boardCopy, king, opponentPiecesCopy);
+  const kingInCheck = isKingInCheck(boardCopy, playerKing, oppPiecesCopy);
 
   // change back indices of piecesToMove
   for (let index in piecesToMove) {
@@ -186,21 +185,29 @@ function willKingBeInCheck(
 }
 
 // determines whether king-side castling is possible
-function canKingSideCastle(board, king, opponentPieces) {
+function canKingSideCastle(board, playerKing, oppPieces) {
   // return if king or rook have previously moved
-  const rook = getKingSideRook(board, king);
+  const rook = board.getKingSideRook(playerKing);
 
-  if (rook === null || king.hasUsedFirstMove || rook.hasUsedFirstMove) {
+  if (rook === null || playerKing.hasUsedFirstMove || rook.hasUsedFirstMove) {
     return false;
   }
 
   // no pieces blocking move
-  if (piecesBlockingMove(board, king.row, king.col, rook.row, rook.col)) {
+  if (
+    piecesBlockingMove(
+      board,
+      playerKing.row,
+      playerKing.col,
+      rook.row,
+      rook.col
+    )
+  ) {
     return false;
   }
 
   // King not currently in check
-  if (isKingInCheck(board, king, opponentPieces)) {
+  if (isKingInCheck(board, playerKing, oppPieces)) {
     return false;
   }
 
@@ -208,18 +215,18 @@ function canKingSideCastle(board, king, opponentPieces) {
   if (
     willKingBeInCheck(
       board,
-      king,
-      opponentPieces,
-      [king, rook],
-      [[king.row, king.col + 2], [rook.row, rook.col - 2]]
+      playerKing,
+      oppPieces,
+      [playerKing, rook],
+      [[playerKing.row, playerKing.col + 2], [rook.row, rook.col - 2]]
     )
   ) {
     return false;
   }
 
   // king must not pass through square under check by enemy pieces
-  for (let col = king.col; col < rook.col; col++) {
-    if (isSquareInCheck(board, king.row, col, opponentPieces)) {
+  for (let col = playerKing.col; col < rook.col; col++) {
+    if (isSquareInCheck(board, playerKing.row, col, oppPieces)) {
       return false;
     }
   }
@@ -227,20 +234,28 @@ function canKingSideCastle(board, king, opponentPieces) {
 }
 
 // determines whether queen-side castling is possible
-function canQueenSideCastle(board, king, opponentPieces) {
+function canQueenSideCastle(board, playerKing, oppPieces) {
   // return if king or rook have previously moved
-  const rook = getQueenSideRook(board, king);
-  if (rook === null || king.hasUsedFirstMove || rook.hasUsedFirstMove) {
+  const rook = board.getQueenSideRook(playerKing);
+  if (rook === null || playerKing.hasUsedFirstMove || rook.hasUsedFirstMove) {
     return false;
   }
 
   // no pieces blocking move
-  if (piecesBlockingMove(board, rook.row, rook.col, king.row, king.col)) {
+  if (
+    piecesBlockingMove(
+      board,
+      rook.row,
+      rook.col,
+      playerKing.row,
+      playerKing.col
+    )
+  ) {
     return false;
   }
 
   // King not currently in check
-  if (isKingInCheck(board, king, opponentPieces)) {
+  if (isKingInCheck(board, playerKing, oppPieces)) {
     return false;
   }
 
@@ -248,44 +263,44 @@ function canQueenSideCastle(board, king, opponentPieces) {
   if (
     willKingBeInCheck(
       board,
-      king,
-      opponentPieces,
-      [king, rook],
-      [[king.row, king.col - 2], [rook.row, rook.col + 3]]
+      playerKing,
+      oppPieces,
+      [playerKing, rook],
+      [[playerKing.row, playerKing.col - 2], [rook.row, rook.col + 3]]
     )
   ) {
     return false;
   }
 
   // king must not pass through square under check by enemy pieces
-  for (let col = king.col; col > rook.col + 1; col--) {
-    if (isSquareInCheck(board, king.row, col, opponentPieces)) {
+  for (let col = playerKing.col; col > rook.col + 1; col--) {
+    if (isSquareInCheck(board, playerKing.row, col, oppPieces)) {
       return false;
     }
   }
   return true;
 }
 
-function castleFilter(board, king, opponentPieces, possibleMovesByKing) {
+function castleFilter(board, playerKing, oppPieces, playerKingMoves) {
   // return if piece is not a king
-  if (king.name !== "king") return;
+  if (playerKing.name !== "king") return;
 
-  if (canKingSideCastle(board, king, opponentPieces)) {
-    possibleMovesByKing.push([king.row, king.col + 2]);
+  if (canKingSideCastle(board, playerKing, oppPieces)) {
+    playerKingMoves.push([playerKing.row, playerKing.col + 2]);
   }
-  if (canQueenSideCastle(board, king, opponentPieces)) {
-    possibleMovesByKing.push([king.row, king.col - 2]);
+  if (canQueenSideCastle(board, playerKing, oppPieces)) {
+    playerKingMoves.push([playerKing.row, playerKing.col - 2]);
   }
 }
 
 // function to tell whether player chose king side castle
-function isKCastle(board, king, opponentPieces, move) {
+function isKCastle(board, piece, oppPieces, move) {
   // return false if piece is not a king
-  if (king.name !== "king") return false;
+  if (piece.name !== "king") return false;
   if (
-    canKingSideCastle(board, king, opponentPieces) &&
-    move[0] === king.row &&
-    move[1] === king.col + 2
+    canKingSideCastle(board, piece, oppPieces) &&
+    move[0] === piece.row &&
+    move[1] === piece.col + 2
   ) {
     return true;
   }
@@ -293,30 +308,18 @@ function isKCastle(board, king, opponentPieces, move) {
 }
 
 // function to tell whether player chose queen side castle
-function isQCastle(board, king, opponentPieces, move) {
+function isQCastle(board, piece, oppPieces, move) {
   // return false if piece is not a king
-  if (king.name !== "king") return false;
+  if (piece.name !== "king") return false;
 
   if (
-    canQueenSideCastle(board, king, opponentPieces) &&
-    move[0] === king.row &&
-    move[1] === king.col - 2
+    canQueenSideCastle(board, piece, oppPieces) &&
+    move[0] === piece.row &&
+    move[1] === piece.col - 2
   ) {
     return true;
   }
   return false;
-}
-
-// retrieves rook on king's side if it has not moved
-function getKingSideRook(board, king) {
-  const rook = board.pieceAt(king.row, king.col + 3);
-  return rook;
-}
-
-// retrieves rook on queen's side if it has not moved
-function getQueenSideRook(board, king) {
-  const rook = board.pieceAt(king.row, king.col - 4);
-  return rook;
 }
 
 // tells whether pawn has reached opposite side
@@ -342,7 +345,5 @@ module.exports = {
   castleFilter,
   isKCastle,
   isQCastle,
-  getKingSideRook,
-  getQueenSideRook,
   pawnAtEnd
 };

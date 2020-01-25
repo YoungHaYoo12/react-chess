@@ -21,17 +21,17 @@ class Piece {
   }
 
   // function to update piece's features if piece has been moved
-  hasBeenMoved() {
-    this.hasUsedFirstMove = true;
+  hasBeenMoved(moved) {
+    this.hasUsedFirstMove = moved;
   }
 
   // filter possibleMoves to get rid of moves that would cause king to be in check
-  checkFilter(possibleMoves, opponentPieces, board, king) {
+  checkFilter(possibleMoves, oppPieces, board, playerKing) {
     return possibleMoves.filter(move => {
       return !ChessLogic.willKingBeInCheck(
         board,
-        king,
-        opponentPieces,
+        playerKing,
+        oppPieces,
         [this],
         [move]
       );
@@ -39,15 +39,15 @@ class Piece {
   }
 
   // returns filtered possible moves
-  filteredMoves(board, king, opponentPieces) {
+  filteredMoves(board, playerKing, oppPieces) {
     const unfilteredMoves = this.possibleMoves(board);
     const filteredMoves = this.checkFilter(
       unfilteredMoves,
-      opponentPieces,
+      oppPieces,
       board,
-      king
+      playerKing
     );
-    this.castleFilter(board, opponentPieces, filteredMoves);
+    this.castleFilter(board, oppPieces, filteredMoves);
     return filteredMoves;
   }
 
@@ -83,6 +83,24 @@ class Piece {
       return false;
     }
     return true;
+  }
+
+  static updatePiecesCastle(board, playerKing, isKingSideCastle) {
+    const castleIndices = board.getCastleIndices(playerKing, isKingSideCastle);
+    Piece.updatePieces(castleIndices[0], castleIndices[1]);
+  }
+
+  static updatePiece(piece, move) {
+    this.updatePieces([piece], [move]);
+  }
+
+  static updatePieces(piecesToMove, newIndices) {
+    for (let index in piecesToMove) {
+      const pieceToMove = piecesToMove[index];
+      const indexToMove = newIndices[index];
+      pieceToMove.updateIndex(indexToMove[0], indexToMove[1]);
+      pieceToMove.hasBeenMoved(true);
+    }
   }
 }
 
@@ -128,6 +146,13 @@ class King extends Piece {
   castleFilter(board, oppPieces, possibleMoves) {
     ChessLogic.castleFilter(board, this, oppPieces, possibleMoves);
   }
+
+  // copy piece
+  copyPiece() {
+    const copy = new King(this.color, this.row, this.col);
+    copy.hasUsedFirstMove = this.hasUsedFirstMove;
+    return copy;
+  }
 }
 
 class Queen extends Piece {
@@ -172,6 +197,13 @@ class Queen extends Piece {
       return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
+
+  // copy piece
+  copyPiece() {
+    const copy = new Queen(this.color, this.row, this.col);
+    copy.hasUsedFirstMove = this.hasUsedFirstMove;
+    return copy;
+  }
 }
 class Bishop extends Piece {
   constructor(color, row, col) {
@@ -210,6 +242,13 @@ class Bishop extends Piece {
       return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
   }
+
+  // copy piece
+  copyPiece() {
+    const copy = new Bishop(this.color, this.row, this.col);
+    copy.hasUsedFirstMove = this.hasUsedFirstMove;
+    return copy;
+  }
 }
 class Knight extends Piece {
   constructor(color, row, col) {
@@ -246,6 +285,13 @@ class Knight extends Piece {
     return possibleMoves.filter(move => {
       return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
+  }
+
+  // copy piece
+  copyPiece() {
+    const copy = new Knight(this.color, this.row, this.col);
+    copy.hasUsedFirstMove = this.hasUsedFirstMove;
+    return copy;
   }
 }
 class Rook extends Piece {
@@ -284,6 +330,13 @@ class Rook extends Piece {
     return possibleMoves.filter(move => {
       return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
+  }
+
+  // copy piece
+  copyPiece() {
+    const copy = new Rook(this.color, this.row, this.col);
+    copy.hasUsedFirstMove = this.hasUsedFirstMove;
+    return copy;
   }
 }
 class Pawn extends Piece {
@@ -375,6 +428,13 @@ class Pawn extends Piece {
     return possibleMoves.filter(move => {
       return this.isValidMove(board, currentRow, currentCol, move[0], move[1]);
     });
+  }
+
+  // copy piece
+  copyPiece() {
+    const copy = new Pawn(this.color, this.row, this.col);
+    copy.hasUsedFirstMove = this.hasUsedFirstMove;
+    return copy;
   }
 }
 

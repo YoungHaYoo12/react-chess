@@ -47,11 +47,13 @@ export default class Player {
 
   // create new copy of player
   static copyPlayer(player) {
-    return new Player(
-      player.color,
-      player.inPlayCopy(),
-      player.offPlayCopy(),
-      player.king
-    );
+    const inPlayCopy = player.inPlayCopy();
+    const offPlayCopy = player.offPlayCopy();
+    // reassign king as well
+    let kingCopy = null;
+    for (const piece of inPlayCopy) {
+      if (piece.name === "king") kingCopy = piece;
+    }
+    return new Player(player.color, inPlayCopy, offPlayCopy, kingCopy);
   }
 }
